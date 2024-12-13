@@ -1,0 +1,10 @@
+services:
+  web-chat:
+    container_name: "web-chat"
+    build: .
+#    env_file:
+#      - /var/www/retake-project/.env
+    ports:
+      - "3000:3000"
+    command: "pnpm start"
+    restart: unless-stopped

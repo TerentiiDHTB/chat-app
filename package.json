@@ -1,5 +1,5 @@
 {
-  "name": "example-with-tailwindcss",
+  "name": "web-chat",
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",

@@ -1,3 +1,15 @@
+1) Скопировать репозиторий себе в папочку
+2) pnpm install
+3) pnpm dev
+4) Переходим на localhost:3000/ (или другой порт которой установить Винкси)
+
+Опционально вместо dev можно
+
+1) *pnpm build (возможно, тут будет ругаться TS, тогда надо будет его саппреснуть)
+2) *pnpm start
+
+------------------
+
 # SolidStart
 
 Everything you need to build a Solid project, powered by [`solid-start`](https://start.solidjs.com);
