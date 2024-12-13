@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -11,17 +12,41 @@ datasource db {
 }
 
 model User {
-  id       Int       @id @default(autoincrement())
-  email    String    @unique
-  name     String    @unique
-  password String
-  Message  Message[]
+  id          Int           @id @default(autoincrement())
+  email       String        @unique
+  name        String        @unique
+  password    String
+  Author      Message[]     @relation("Author")
+  Receiver    Message[]     @relation("Receiver")
+  Chat_Member Chat_Member[]
 }
 
 model Message {
-  id           Int     @id @default(autoincrement())
-  author       User    @relation(fields: [author_id], references: [id])
+  id           Int      @id @default(autoincrement())
+  author       User     @relation("Author", fields: [author_id], references: [id])
   author_id    Int
+  recipient    User     @relation("Receiver", fields: [recipient_id], references: [id])
+  recipient_id Int
   message_body String
   is_read      Boolean
+  Chat         Chat     @relation(fields: [chat_id], references: [id])
+  chat_id      Int
+  send_time    DateTime
+}
+
+model Chat {
+  id                Int           @id @default(autoincrement())
+  last_message_time DateTime?
+  Chat_Member       Chat_Member[]
+  Message           Message[]
+}
+
+model Chat_Member {
+  id        Int  @id @default(autoincrement())
+  chat      Chat @relation(fields: [chat_id], references: [id])
+  chat_id   Int
+  user      User @relation(fields: [member_id], references: [id])
+  member_id Int
+
+  @@unique([chat_id, member_id], name: "unique_user_chat")
 }

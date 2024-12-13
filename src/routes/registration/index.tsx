@@ -1,16 +1,17 @@
-import {createSignal, Setter, Show} from "solid-js"
+import {createSignal, Setter, Show, useContext} from "solid-js"
 import {createNewUser} from "~/routes/registration/api";
-import {A} from "@solidjs/router";
+import {A, useNavigate} from "@solidjs/router";
+import {UserContext} from "~/shared/lib/userContext";
 
 interface IRegistrationErrors {
     email: string | null,
     password: string | null,
     confirmPassword: string | null,
     name: string | null,
+    submitErrors: string | null,
 }
 
 const onRegistrationSubmit = async (
-    e: MouseEvent,
     email: string,
     password: string,
     name: string,
@@ -56,32 +57,61 @@ const onRegistrationSubmit = async (
         setErrors((value) => ({...value, confirmPassword: "Confirm password is required"}))
     }
 
-    e.preventDefault()
-
     if (isValid) {
-        await createNewUser(email, password, name).then(res => console.log(res, "success")).catch(err => console.log(err, "nope("))
+        return await createNewUser(email, password, name).then(async res => {
+            const {setUserState} = useContext(UserContext)
+            setUserState('logged', true)
+            setUserState(await res.json())
+            setErrors(value => ({...value, submitErrors: null}))
+        }).catch(err => {
+            setErrors(value => ({...value, submitErrors: err.statusText}))
+            return Promise.reject()
+        })
     }
 }
 
 export default function Registration() {
-    const [email, setemail] = createSignal<string>("")
+    const [email, setEmail] = createSignal<string>("")
     const [password, setPassword] = createSignal<string>("")
     const [confirmPassword, setConfirmPassword] = createSignal<string>("")
     const [name, setName] = createSignal<string>("")
+
+    const [isFormDisabled, setIsFormDisabled] = createSignal<boolean>(false)
+
+    const navigate = useNavigate()
+
     const [errors, setErrors] = createSignal<IRegistrationErrors>({
         email: null,
         password: null,
         confirmPassword: null,
         name: null,
+        submitErrors: null,
     })
+
+    const handleRegistrationFormSubmit = async (e: SubmitEvent) => {
+        e.preventDefault()
+
+        setIsFormDisabled(true)
+
+        await onRegistrationSubmit(email(), password(), name(), confirmPassword(), setErrors)
+            .then(() => {
+                navigate('/chats')
+            })
+            .finally(() => {
+                setIsFormDisabled(false)
+            })
+    }
 
     return (
         <div class="flex h-screen w-screen flex-col items-center justify-center">
-            <form class="flex h-4/6 w-4/6 flex-col items-center justify-center rounded-md border border-black">
-                <h1 class="mb-6 text-3xl font-bold">Registration</h1>
+            <form
+                class="flex min-h-4/6 h-fit  w-4/6 flex-col items-center justify-center rounded-md border border-black"
+                onSubmit={handleRegistrationFormSubmit}
+            >
+                <h1 class="mb-6 mt-3 text-3xl font-bold">Registration</h1>
 
                 <div class="mb-3 flex w-1/2 flex-col">
-                    <label class="mb-2 font-medium" for="name">
+                    <label class="mb-2 text-lg font-medium" for="name">
                         Your name
                     </label>
 
@@ -91,6 +121,7 @@ export default function Registration() {
                         id="name"
                         type="text"
                         class="mb-1 rounded-md border border-gray-700 px-2 py-1"
+                        disabled={isFormDisabled()}
                     />
 
                     <Show when={errors().name}>
@@ -99,16 +130,17 @@ export default function Registration() {
                 </div>
 
                 <div class="mb-3 flex w-1/2 flex-col">
-                    <label class="mb-2 font-medium" for="email">
-                        email
+                    <label class="mb-2 text-lg font-medium" for="email">
+                        Email
                     </label>
 
                     <input
                         value={email()}
-                        onChange={(e) => setemail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                         id="email"
                         type="text"
                         class="mb-1 rounded-md border border-gray-700 px-2 py-1"
+                        disabled={isFormDisabled()}
                     />
 
                     <Show when={errors().email}>
@@ -117,7 +149,7 @@ export default function Registration() {
                 </div>
 
                 <div class="mb-3 flex w-1/2 flex-col">
-                    <label class="mb-2 font-medium" for="password">
+                    <label class="mb-2 text-lg font-medium" for="password">
                         Password
                     </label>
 
@@ -127,6 +159,7 @@ export default function Registration() {
                         id="password"
                         type="password"
                         class="mb-1 rounded-md border border-gray-700 px-2 py-1"
+                        disabled={isFormDisabled()}
                     />
 
                     <Show when={errors().password}>
@@ -135,7 +168,7 @@ export default function Registration() {
                 </div>
 
                 <div class="mb-6 flex w-1/2 flex-col">
-                    <label class="mb-2 font-medium" for="confirm_password">
+                    <label class="mb-2 text-lg font-medium" for="confirm_password">
                         Confirm password
                     </label>
 
@@ -145,6 +178,7 @@ export default function Registration() {
                         type="password"
                         id="confirm_password"
                         class=" mb-1 rounded-md border border-gray-700 px-2 py-1"
+                        disabled={isFormDisabled()}
                     />
 
                     <Show when={errors().confirmPassword}>
@@ -154,14 +188,21 @@ export default function Registration() {
 
 
                 <button
-                    onClick={(e) => onRegistrationSubmit(e, email(), password(), name(), confirmPassword(), setErrors)}
                     type="submit"
                     class="w-1/2 mb-2 rounded-md bg-gray-700 py-1 font-medium text-white hover:bg-gray-600 active:bg-gray-500"
                 >
                     Register
                 </button>
 
-                <div class="mb-2">Already have an account? <A href="/login" class="text-sky-600 underline">Log in</A>
+                <Show when={errors().submitErrors}>
+                    <small class="mb-2 text-sm font-medium text-red-600">
+                        {errors().submitErrors}
+                    </small>
+                </Show>
+
+                <div class="mb-3">
+                    Already have an account?&nbsp;
+                    <A href="/login" class="text-sky-600 underline">Log in</A>
                 </div>
             </form>
         </div>
